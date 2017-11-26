@@ -1,7 +1,7 @@
 <?php
 /**
  * Test group 1
- * Simple captcha with 5 characters little dotted noise
+ * Simple captcha with 5 characters and little dot noise
  */
 
 /* The characters to choose from */
@@ -37,11 +37,11 @@ for ($t = 0; $t < $maximg; $t++) {
     }
 
     /* Save the image */
-    imagepng($im, 'E:/captcha/group1/'.$t.'.png');
+    imagepng($im, 'E:/captchatest/group1/'.$t.'.png');
     imagedestroy($im);
 }
 
 /* The answer file */
-$ansfile = fopen('E:/captcha/answers/group1.txt', 'w') or die('error');
+$ansfile = fopen('E:/captchatest/answers/group1.txt', 'w') or die('error');
 fwrite($ansfile, $ans);
 fclose($ansfile);
