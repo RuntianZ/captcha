@@ -1,0 +1,22 @@
+#IncludeRegexLine: ^[ 	]*[#%][ 	]*(include|import)[ 	]*[<"]([^">]+)([">])
+
+#IncludeRegexScan: ^.*$
+
+#IncludeRegexComplain: ^$
+
+#IncludeRegexTransform: 
+
+E:/captcha/src/captcha.c
+captcha.h
+E:/captcha/src/captcha.h
+stdio.h
+-
+
+E:/captcha/src/captcha.h
+
+E:/captcha/src/main.c
+captcha.h
+E:/captcha/src/captcha.h
+stdio.h
+-
+

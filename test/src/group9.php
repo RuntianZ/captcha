@@ -1,7 +1,7 @@
 <?php
 /**
- * Test group 0
- * Simple captcha with 5 characters and no noise
+ * Test group 9
+ * Complex captcha with random font
  */
 
 /* The characters to choose from */

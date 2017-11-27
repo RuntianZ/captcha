@@ -1,25 +1,8 @@
 /**
- * Implementing captcha.h
  * Created by: Runtian Zhai
  */
 
-#include "captcha.h"
 #include <stdio.h>
-
-char *captcha_recognize(char *png_file)
-{
-    return "";
-}
-
-double error_function(char *recognize_result, char *answer)
-{
-    return 0;
-}
-
-struct captcha *generate_sample(int group_id, int n)
-{
-    return NULL;
-}
 
 char *test_error_function(double (*func)(char*, char*))
 {
@@ -82,7 +65,7 @@ char *test_error_function(double (*func)(char*, char*))
 
             case 4:
                 return "0.00\nMust return 0 if totally wrong.";
-            
+
         }
     }
 
@@ -115,3 +98,4 @@ char *test_error_function(double (*func)(char*, char*))
     sprintf(res, "%.2f\nPassed general tests.", ans);
     return res;
 }
+

@@ -26,6 +26,13 @@ char *captcha_recognize(char *png_file);
  */
 double error_function(char *recognize_result, char *answer);
 
+/**
+ * test_error_function       Testing the error function.
+ * @param func               The function to be tested.
+ * @return                   An evaluation message.
+ */
+char *test_error_function(double (*func)(char*, char*));
+
 
 #define MAX_SAMPLE_NUM 500
 
