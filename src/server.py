@@ -69,7 +69,7 @@ def error_function(result, answer):
 
 def server_attempt(username, password, result):
     '''
-    server_attempt -   Attempt to recognize a captcha file on the server/
+    server_attempt -   Attempt to recognize a captcha file on the server.
     :param username:   Username.
     :param password:   Password.
     :param result:     The attempting result.
