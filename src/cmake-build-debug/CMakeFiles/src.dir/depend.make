@@ -7,3 +7,6 @@ CMakeFiles/src.dir/captcha.c.obj: ../captcha.h
 CMakeFiles/src.dir/main.c.obj: ../captcha.h
 CMakeFiles/src.dir/main.c.obj: ../main.c
 
+CMakeFiles/src.dir/test/captchatest.c.obj: ../captcha.h
+CMakeFiles/src.dir/test/captchatest.c.obj: ../test/captchatest.c
+

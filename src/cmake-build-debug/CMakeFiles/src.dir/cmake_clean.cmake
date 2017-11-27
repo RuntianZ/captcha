@@ -1,6 +1,7 @@
 file(REMOVE_RECURSE
   "CMakeFiles/src.dir/main.c.obj"
   "CMakeFiles/src.dir/captcha.c.obj"
+  "CMakeFiles/src.dir/test/captchatest.c.obj"
   "src.pdb"
   "src.exe"
   "src.exe.manifest"

@@ -176,6 +176,33 @@ main.c.s:
 	$(MAKE) -f CMakeFiles\src.dir\build.make CMakeFiles/src.dir/main.c.s
 .PHONY : main.c.s
 
+test/captchatest.obj: test/captchatest.c.obj
+
+.PHONY : test/captchatest.obj
+
+# target to build an object file
+test/captchatest.c.obj:
+	$(MAKE) -f CMakeFiles\src.dir\build.make CMakeFiles/src.dir/test/captchatest.c.obj
+.PHONY : test/captchatest.c.obj
+
+test/captchatest.i: test/captchatest.c.i
+
+.PHONY : test/captchatest.i
+
+# target to preprocess a source file
+test/captchatest.c.i:
+	$(MAKE) -f CMakeFiles\src.dir\build.make CMakeFiles/src.dir/test/captchatest.c.i
+.PHONY : test/captchatest.c.i
+
+test/captchatest.s: test/captchatest.c.s
+
+.PHONY : test/captchatest.s
+
+# target to generate assembly for a file
+test/captchatest.c.s:
+	$(MAKE) -f CMakeFiles\src.dir\build.make CMakeFiles/src.dir/test/captchatest.c.s
+.PHONY : test/captchatest.c.s
+
 # Help Target
 help:
 	@echo The following are some of the valid targets for this Makefile:
@@ -191,6 +218,9 @@ help:
 	@echo ... main.obj
 	@echo ... main.i
 	@echo ... main.s
+	@echo ... test/captchatest.obj
+	@echo ... test/captchatest.i
+	@echo ... test/captchatest.s
 .PHONY : help
 
 

@@ -20,3 +20,9 @@ E:/captcha/src/captcha.h
 stdio.h
 -
 
+E:/captcha/src/test/captchatest.c
+../captcha.h
+E:/captcha/src/captcha.h
+stdio.h
+-
+

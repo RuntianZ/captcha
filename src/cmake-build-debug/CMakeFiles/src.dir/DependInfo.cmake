@@ -6,6 +6,7 @@ set(CMAKE_DEPENDS_LANGUAGES
 set(CMAKE_DEPENDS_CHECK_C
   "E:/captcha/src/captcha.c" "E:/captcha/src/cmake-build-debug/CMakeFiles/src.dir/captcha.c.obj"
   "E:/captcha/src/main.c" "E:/captcha/src/cmake-build-debug/CMakeFiles/src.dir/main.c.obj"
+  "E:/captcha/src/test/captchatest.c" "E:/captcha/src/cmake-build-debug/CMakeFiles/src.dir/test/captchatest.c.obj"
   )
 set(CMAKE_C_COMPILER_ID "GNU")
 
