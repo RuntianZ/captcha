@@ -3,6 +3,7 @@
  */
 
 #include "captcha.h"
+#include "test/captchatest.h"
 #include <stdio.h>
 
 int main()

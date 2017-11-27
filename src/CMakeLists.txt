@@ -3,5 +3,5 @@ project(src)
 
 set(CMAKE_C_STANDARD 99)
 
-set(SOURCE_FILES captcha.h main.c captcha.c test/captchatest.c)
+set(SOURCE_FILES captcha.h main.c captcha.c test/captchatest.c test/captchatest.h)
 add_executable(src ${SOURCE_FILES})

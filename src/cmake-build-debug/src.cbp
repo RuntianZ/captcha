@@ -94,6 +94,9 @@
 		<Unit filename="E:/captcha/src/test/captchatest.c">
 			<Option target="src"/>
 		</Unit>
+		<Unit filename="E:/captcha/src/test/captchatest.h">
+			<Option target="src"/>
+		</Unit>
 		<Unit filename="E:/captcha/src/CMakeLists.txt">
 			<Option virtualFolder="CMake Files\"/>
 		</Unit>

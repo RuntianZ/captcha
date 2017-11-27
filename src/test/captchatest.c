@@ -1,4 +1,4 @@
-#include "../captcha.h"
+#include "captchatest.h"
 #include <stdio.h>
 
 char *test_error_function(double (*func)(char*, char*))
