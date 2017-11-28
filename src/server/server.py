@@ -1,4 +1,7 @@
+# server.py - The server module
+
 import urllib.request
+import server.ef as ef
 
 
 class ServerException(Exception):
@@ -50,53 +53,6 @@ def server_view(username, password):
         return resp[8:]
     raise ServerException(resp)
 
-# The default error function
-def default_error_function(result, answer):
-    '''
-    This is the default error function. It returns 1.0 if
-    result == answer and 0.0 otherwise.
-
-    Examples:
-    >>> default_error_function('abc', 'abc')
-    1.0
-    >>> default_error_function('abc', 'AbC')
-    0.0
-    '''
-    if result == answer:
-        return 1.0
-    else:
-        return 0.0
-
-# The error function library
-error_function_lib = [default_error_function]
-
-def error_function(result, answer, version):
-    '''
-    error_function - The error function.
-    :param result:   Recognition result.
-    :param answer:   Real captcha.
-    :param version:  The version of the error function to be used.
-    :return:         A value between 0 and 1. 1 means identical strings
-                     while 0 means totally wrong.
-
-    This function provides an interface between C code and python code.
-    If version is 0, the default error function will be used. The
-    default error function returns 1.0 if result == answer and 0.0 
-    otherwise.
-    '''
-    return error_function_lib[version](result, answer)
-
-def register_ef(func, docstr):
-    '''
-    register_ef -     Register an error function.
-    :param func:      The function to be registered.
-    :param docstr:    The doc string of the function.
-    :return:          The version of this error function.
-    '''
-    func.__doc__ = docstr
-    error_function_lib.append(func)
-    return len(error_function_lib) - 1
-
 
 def server_attempt(username, password, result, ef_version = 0):
     '''
@@ -115,4 +71,4 @@ def server_attempt(username, password, result, ef_version = 0):
     that you can attempt on the same captcha file more than once.
     '''
     ans = server_view(username, password)
-    return error_function(result, ans, ef_version)
+    return ef.error_function_lib[ef_version](bytes(result, 'utf-8'), bytes(ans, 'utf-8'))
