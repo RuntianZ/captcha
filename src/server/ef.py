@@ -1,6 +1,7 @@
 # ef.py - The error function module
 from ctypes import *
 import os
+import platform
 
 
 class ErrorFunctionException(Exception):
@@ -37,7 +38,10 @@ error_function_docstr = [default_error_function.__doc__]
 def load_cfunc(sofile, funcname):
 	if not os.path.exists(sofile):
 		raise ErrorFunctionException('Shared library file does not exist.')
-	lib = cdll.LoadLibrary(sofile)
+	if platform.system() == "Windows":
+		lib = windll.LoadLibrary(sofile)
+	else:
+		lib = cdll.LoadLibrary(sofile)
 	if not hasattr(lib, funcname):
 		raise ErrorFunctionException('The function name does not exist.')
 	c_func = getattr(lib, funcname)
