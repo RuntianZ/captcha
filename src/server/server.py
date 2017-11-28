@@ -1,4 +1,7 @@
+# server.py - The server module
+
 import urllib.request
+import server.ef as ef
 
 
 class ServerException(Exception):
@@ -51,34 +54,67 @@ def server_view(username, password):
     raise ServerException(resp)
 
 
-def error_function(result, answer):
-    '''
-    error_function - The error function.
-    :param result:   Recognition result.
-    :param answer:   Real captcha.
-    :return:         A value between 0 and 1. 1 means identical strings
-                     while 0 means totally wrong.
-
-    This function provides an interface between C code and python code.
-    '''
-    if result == answer:
-        return 1.0
-    else:
-        return 0.0
-
-
-def server_attempt(username, password, result):
+def server_attempt(username, password, result, ef_version = 0):
     '''
     server_attempt -   Attempt to recognize a captcha file on the server.
     :param username:   Username.
     :param password:   Password.
     :param result:     The attempting result.
+    :param ef_version: Indicate the error function that will be used to
+                       evaluate the result. If ef_version is 0, the default
+                       function will be used.  
     :return:           The result of the error function.
 
     You must call server_get before server_attempt. Otherwise, the server
     will raise an exception.
-    You may attempt multiple times after you call server_attempt, which means
-    that you can attempt on the same captcha file more than once.
+    If you want to attempt on the same captcha multiple times or use more
+    than one error function, consider using server_iterate instead.
+
+    For example:
+    >>> server_attempt('user', 'password', 'abcde', 2)
+    0.35
     '''
     ans = server_view(username, password)
-    return error_function(result, ans)
+    return ef.error_function_lib[ef_version](bytes(result, 'utf-8'), bytes(ans, 'utf-8'))
+
+
+def server_iterate(username, password, results, versions):
+    '''
+    server_iterate -  To test a group of results using a group of error functions.
+    :param username:  Username.
+    :param password:  Password.
+    :param results:   A list of results that will be tested.
+    :param versions:  A list of error function versions that will be used.
+    :return:          A list. Each item contains the results of different error
+                      functions that test the same result.
+
+    Use this method if you want to test on multiple results and use more than one
+    error function. This function returns compare results in their input order.
+
+    For example: If we have the following result
+    Result     Version     Error function return
+    'abc'      0           0.0
+    'abc'      1           0.4
+    'abc'      2           0.7
+    'def'      0           0.0
+    'def'      1           0.6
+    'def'      2           0.9
+
+    >>> server_iterate('user', 'password', ['def', 'abc'], [0, 2, 1])
+    [[0.0, 0.9, 0.6], [0.0, 0.7, 0.4]]
+    '''
+    cmplist = []
+    ans = server_view(username, password)
+    l = len(results)
+    m = len(versions)
+    bans = bytes(ans, 'utf-8')
+
+    # Iterate tests.
+    for i in range(0, l):
+        tmp = []
+        bresult = bytes(results[i], 'utf-8')
+        for j in range(0, m):
+            tmp.append(ef.error_function_lib[versions[j]](bresult, bans))
+        cmplist.append(tmp)
+
+    return cmplist
