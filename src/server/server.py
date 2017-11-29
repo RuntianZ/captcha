@@ -12,16 +12,35 @@ class ServerException(Exception):
         return self.msg
 
 
+# Cached user and password.
+cached_username = ''
+cached_password = ''
+
+
+def cache_login(func):
+
+    def cached_func(*args, **kwargs):
+        global cached_username, cached_password
+        if cached_username == '':
+            return func(*args, **kwargs)
+        return func(username = cached_username, password = cached_password, *args, **kwargs)
+
+    return cached_func
+
+
+@cache_login
 def server_get(username, password, groupid):
     '''
     server_get -       Create a captcha image file on the server and get its url.
     :param username:   Username.
     :param password:   Password.
-    :param groupid:    The ID of the captcha group.
+    :param groupid:    The ID of the captcha group, can be either a number or a string.
     :return:           The URL of the captcha image.
 
     If all arguments are correct, the server will generate a captcha file and return
     its url. Otherwise, an exception will be raised.
+    The argument groupid can be either a number or a string. If a string, the method
+    will check whether the string is a number, and raise an exception if not.
     '''
     groupid = str(groupid)
     if not groupid.isdigit():
@@ -57,6 +76,7 @@ def server_view(username, password):
     raise ServerException(resp)
 
 
+@cache_login
 def server_attempt(username, password, result, ef_version = 0):
     '''
     server_attempt -   Attempt to recognize a captcha file on the server.
@@ -81,6 +101,7 @@ def server_attempt(username, password, result, ef_version = 0):
     return ef.error_function_lib[ef_version](bytes(result, 'utf-8'), bytes(ans, 'utf-8'))
 
 
+@cache_login
 def server_iterate(username, password, results, versions):
     '''
     server_iterate -  To test a group of results using a group of error functions.
@@ -121,3 +142,42 @@ def server_iterate(username, password, results, versions):
         cmplist.append(tmp)
 
     return cmplist
+
+
+def server_login(username, password):
+    '''
+    server_login -    Log in so that you don't need to provide user info every time.
+    :param username:  Username.
+    :param password:  Password.
+
+    This method does not check whether username and password match. It only caches
+    the login information and use that information whenever you call a method in the
+    server module.
+    Only one user can be logged in at a time, but you can call this method multiple 
+    times. For example, if you happened to provide the wrong password, you can call
+    this method to modify your password.
+    Once you have logged in, you are not allowed to provide username and password
+    again when calling server methods. You can call server_logout if you want.
+
+    Examples:
+    >>> server_login('user', 'password')
+    >>> server_get(1)
+    http://www.example.com/example.png
+    >>> server_get('user', 'password', 1)
+    Traceback (most recent call last):
+        ...
+    '''
+    global cached_username, cached_password
+    cached_username = username
+    cached_password = password
+
+
+def server_logout():
+    '''
+    server_logout -  Log out if you have already logged in.
+
+    Note:
+    This method will not raise an error even if you haven't logged in.
+    '''
+    global cached_username
+    cached_username = ''
