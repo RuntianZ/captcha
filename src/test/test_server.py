@@ -1,4 +1,8 @@
+<<<<<<< Updated upstream
 import sys;
+=======
+import sys
+>>>>>>> Stashed changes
 sys.path.append("../")
 from server import *
 
