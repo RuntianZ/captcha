@@ -23,6 +23,9 @@ def server_get(username, password, groupid):
     If all arguments are correct, the server will generate a captcha file and return
     its url. Otherwise, an exception will be raised.
     '''
+    groupid = str(groupid)
+    if not groupid.isdigit():
+        raise ServerException('Groupid must be a digit.')
     url = 'http://vitas.runtianz.cn/captcha/get?username=' + \
           username + '&password=' + password + '&groupid=' + groupid
     with urllib.request.urlopen(url) as page:
