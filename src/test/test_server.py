@@ -1,4 +1,12 @@
+<<<<<<< Updated upstream
+import sys;
+=======
+import sys
+>>>>>>> Stashed changes
+sys.path.append("../")
 from server import *
 
-i = ef.register_error_function('test_ef.dll', 'test_ef', 'This is my function.')
-print(server.server_iterate('user3', 'cptbtptp', ['yes', 'no', 'yes'], [i, 0]))
+server.server_login('user3', 'cptbtptp')
+print(server.server_get(groupid = 1))
+server.server_logout()
+print(server.server_get('user1', 'yqqlmgsycl', '4'))

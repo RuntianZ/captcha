@@ -1,9 +1,9 @@
-#include <string.h>
+#include "../captcha.h"
+#include "captchatest.h"
+#include <stdio.h>
 
-double test_ef(char *s1, char *s2)
+int main()
 {
-	if (!strcmp(s1, "yes"))
-		return 1.0;
-	else
-		return 0.0;
+	printf("%s\n", test_error_function(error_function));
+	return 0;
 }
