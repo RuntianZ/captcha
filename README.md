@@ -1,2 +1,0 @@
-# captcha
-Captcha recognizing technique
