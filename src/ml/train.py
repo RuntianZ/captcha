@@ -2,14 +2,11 @@
 import sys
 sys.path.append('ml/')
 
-from PIL import Image
-from io import BytesIO
 import numpy as np
-import requests as req
-from gen_captcha import gen_captcha_text_and_image
-from gen_captcha import number
-from gen_captcha import alphabet
-from gen_captcha import ALPHABET
+from cgen import gen_captcha_text_and_image, get_captcha_from_url
+from cgen import number
+from cgen import alphabet
+from cgen import ALPHABET
 
 import numpy as np
 import tensorflow as tf
@@ -17,13 +14,11 @@ import tensorflow as tf
 # The default batch size.
 default_batch_size = 64
 
-# Test whether captcha genaration works.
-text, image = gen_captcha_text_and_image() 
 
 # Set the shape of a captcha image
 IMAGE_HEIGHT = 60
 IMAGE_WIDTH = 160
-MAX_CAPTCHA = len(text)
+MAX_CAPTCHA = 0
 
 # Convert the image to a grey-scale map. Color is useless in CNN.
 def convert2gray(img):
@@ -36,6 +31,7 @@ def convert2gray(img):
 # Genarate the character set that appears in captcha images.
 char_set = number + alphabet + ALPHABET + ['_']
 CHAR_SET_LEN = len(char_set)
+
 
 # Transfer the text into a 62-dimension 0-1 vector, each dimension stands for the appearance of one character.
 # Here, to simplify the accuracy calculation, there will be no duplicate characters in the captcha.
@@ -61,6 +57,7 @@ def t2v(text):
         idx = i * CHAR_SET_LEN + c2p(c)
         vector[idx] = 1
     return vector
+
 
 # Restore the text from the vector
 def v2t(vec):
@@ -108,9 +105,8 @@ def get_next_batch(batch_size, generator):
     return batch_x, batch_y
 
 
-# Initialize the input x and input y
-X = tf.placeholder(tf.float32, [None, IMAGE_HEIGHT*IMAGE_WIDTH])
-Y = tf.placeholder(tf.float32, [None, MAX_CAPTCHA*CHAR_SET_LEN])
+X = 0
+Y = 0
 keep_prob = tf.placeholder(tf.float32) 
 
 
@@ -200,18 +196,6 @@ def train_crack_captcha_cnn(acc_limit, times_limit, generator):
             step += 1
 
 
-def get_captcha_from_url(url, local):
-    if not local:
-        response = req.get(url)
-        image = Image.open(BytesIO(response.content))
-    else:
-        image = Image.open(url)
-    out = image.resize((160,60),Image.ANTIALIAS)
-    output = np.array(out)
-    print(output.shape)
-    return output
-
-
 # In this function, given a captcha image it will return the text prediction
 # There is still bugs in restoring the model
 # TO DO I never test this function
@@ -244,7 +228,8 @@ def crack_captcha(captcha_image):
 # The following methods can be used by importing the train module.
 
 
-def start_train(acc_limit = 0, times_limit = 0, generator = gen_captcha_text_and_image):
+def start_train(acc_limit = 0, times_limit = 0, \
+    generator = gen_captcha_text_and_image, progress_bar = True):
     '''
     start_train -         Start to train the model.
     :param acc_limit:     The model accuracy lower limit.
@@ -271,7 +256,29 @@ def start_train(acc_limit = 0, times_limit = 0, generator = gen_captcha_text_and
     0 0.698386
     **** 0 0.0175
     '''
-    train_crack_captcha_cnn(acc_limit, times_limit, generator)
+
+    # Test whether generator works.
+    text, image = generator()
+    global MAX_CAPTCHA
+    MAX_CAPTCHA = len(text)
+
+    # Create generator with progress bar.
+    def generator_with_progress_bar():
+        result = generator()
+        print('*', end = '')
+        sys.stdout.flush()
+        return result
+
+    if progress_bar:
+        gen = generator_with_progress_bar
+    else:
+        gen = generator
+
+    # Initialize X and Y.
+    global X, Y
+    X = tf.placeholder(tf.float32, [None, IMAGE_HEIGHT*IMAGE_WIDTH])
+    Y = tf.placeholder(tf.float32, [None, MAX_CAPTCHA*CHAR_SET_LEN])
+    train_crack_captcha_cnn(acc_limit, times_limit, gen)
 
 
 def set_batch_size(new_size):
@@ -300,7 +307,6 @@ def recognize(url, local = False):
     hEllO
     '''
     img = convert2gray(get_captcha_from_url(url, local))
-    print(url)
     flat = img.flatten() / 255
     result = crack_captcha(flat)
 

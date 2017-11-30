@@ -21,7 +21,7 @@ def cache_login(func):
 
     def cached_func(*args, **kwargs):
         global cached_username, cached_password
-        if cached_username == '':
+        if (cached_username == '') or ('username' in kwargs):
             return func(*args, **kwargs)
         return func(username = cached_username, password = cached_password, *args, **kwargs)
 
@@ -156,20 +156,24 @@ def server_login(username, password):
     Only one user can be logged in at a time, but you can call this method multiple 
     times. For example, if you happened to provide the wrong password, you can call
     this method to modify your password.
-    Once you have logged in, you are not allowed to provide username and password
-    again when calling server methods. You can call server_logout if you want.
+    Moreover, you can call server methods using another account even if you have 
+    already logged in. But logging in with another account will log out the previous
+    account.
+    Once you have logged in, you cannot use positional arguments when calling server
+    methods.
 
     Examples:
-    >>> server_login('user', 'password')
+    >>> server_login('user1', 'password1')
     >>> server_get(groupid = 1)
-    http://www.example.com/example.png
-    >>> server_get('user', 'password', 1)
+    http://www.example.com/user1.png
+    >>> server_get(1)
     Traceback (most recent call last):
         ...
-
-    Note:
-    You need to call server_get(groupid = 1) instead of server_get(1), because the
-    method may assume that 1 is the value of username if you don't specify it.
+    >>> server_get('user1', 'password1', 1)
+    Traceback (most recent call last):
+        ...
+    >>> server_get(username = 'user2', password = 'password2', groupid = 1)
+    http://www.example.com/user2.png
     '''
     global cached_username, cached_password
     cached_username = username

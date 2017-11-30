@@ -7,6 +7,12 @@ from captcha.image import ImageCaptcha
 import numpy as np
 from PIL import Image
 import random
+import requests as req
+from io import BytesIO
+
+import sys
+sys.path.append('../')
+from server import *
 
 # TO DO replace this with server.py API.
 # Numbers, upper characters and lower characters will appear in captcha text.
@@ -42,5 +48,24 @@ def gen_captcha_text_and_image():
 
 	return captcha_text, captcha_image
 
-print(random_captcha_text())
 
+def get_captcha_from_url(url, local):
+    if not local:
+        response = req.get(url)
+        image = Image.open(BytesIO(response.content))
+    else:
+        image = Image.open(url)
+    out = image.resize((160,60),Image.ANTIALIAS)
+    output = np.array(out)
+    return output
+
+
+def server_generator(username, password, groupid):
+
+	def real_generator():
+		url = server.server_get(username = username, password = password, groupid = groupid)
+		ans = server.server_view(username, password)
+		img = get_captcha_from_url(url, False)
+		return ans, img
+
+	return real_generator
