@@ -161,11 +161,15 @@ def server_login(username, password):
 
     Examples:
     >>> server_login('user', 'password')
-    >>> server_get(1)
+    >>> server_get(groupid = 1)
     http://www.example.com/example.png
     >>> server_get('user', 'password', 1)
     Traceback (most recent call last):
         ...
+
+    Note:
+    You need to call server_get(groupid = 1) instead of server_get(1), because the
+    method may assume that 1 is the value of username if you don't specify it.
     '''
     global cached_username, cached_password
     cached_username = username

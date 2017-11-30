@@ -3,7 +3,9 @@ src/.idea
 src/cmake-build-debug
 
 # Python cache:
+src/__pycache__
 src/server/__pycache__
+src/ml/__pycache__
 
 # Test binaries:
 src/test_ef.so
