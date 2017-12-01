@@ -281,6 +281,12 @@ def start_train(acc_limit = 0, step_limit = 0, \
     model to default model output path. Set these two paths using set_model_path(). If input
     path is set to an empty string, a new model will be created and used.
 
+    Note:
+    According to our experiments, caching is a rather slow operation. If you plan to keep
+    this running for a long period of time (say, overnight), you should set cache_frequency
+    to a large value. However, it is not a good practice to prohibit caching, as all your
+    work will be lost in accidents such as power failure.
+
     Example:
     >>> start_train(step_limit = 4, cache_frequency = 2)
     0 0.0839923 

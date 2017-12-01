@@ -1,14 +1,9 @@
 <?php
-/**
- * Created by PhpStorm.
- * User: Administrator
- * Date: 2017/7/5
- * Time: 15:54
- */
 
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 
 class CaptchaController extends Controller {
     protected $usrinfo = [
@@ -17,24 +12,22 @@ class CaptchaController extends Controller {
         ['user3', 'cptbtptp'],
     ];
 
+    protected $username, $password;
+
     protected $chars = 'abcdefghijkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ123456789';
     protected $maxgroupid = 9;
 
     public function get(Request $request) {
-        if (!$request->has('username') || !$request->has('password') || !$request->has('groupid'))
-            return 'Arguments error.';
+        if (!$request->has('groupid'))
+            return 'Argument error.';
         $groupid = $request->input('groupid');
-        $username = $request->input('username');
-        $password = $request->input('password');
-        $useri = 0;
-        while ($useri < count($this->usrinfo) &&
-            ($username != $this->usrinfo[$useri][0] || $password != $this->usrinfo[$useri][1]))
-            $useri++;
-        if ($useri == count($this->usrinfo))
-            return 'Password wrong.';
-
+        $checkinfo = $this->parse_login_info($request);
+        if ($checkinfo != 'Success')
+            return $checkinfo;
         if ($groupid > $this->maxgroupid || $groupid < 0)
             return 'Group id error.';
+        $username = $this->username;
+        $password = $this->password;
 
         $url = 'storage/app/'.$username.'/captcha.png';
         $ansurl = 'storage/app/'.$username.'/ans.txt';
@@ -47,8 +40,59 @@ class CaptchaController extends Controller {
     }
 
     public function attempt(Request $request) {
-        if (!$request->has('username') || !$request->has('password') || !$request->has('result'))
-            return 'Arguments error.';
+        $checkinfo = $this->parse_login_info($request);
+        if ($checkinfo != 'Success')
+            return $checkinfo;
+        $username = $this->username;
+        $password = $this->password;
+
+        $ansurl = 'storage/app/'.$username.'/ans.txt';
+        if (!file_exists($ansurl))
+            return 'You should get before attempt.';
+        $ans = file_get_contents($ansurl);
+        $msg = 'Success:'.$ans;
+        return $msg;
+    }
+
+    public function upload(Request $request) {
+        $checkinfo = $this->parse_login_info($request);
+        if ($checkinfo != 'Success')
+            return $checkinfo;
+        $username = $this->username;
+        $password = $this->password;
+
+        if (!$request->has('filename'))
+            return 'Argument error.';
+        $file = $request->file('file');
+        if (!$file->isValid())
+            return 'File is not valid.';
+        $filename = $request->get('filename');
+        $filepath = 'storage/app/'.$username.'/';
+        $filename = $filename.'.tar.gz';
+        $file->move($filepath, $filename);
+        return 'Success:'.$filepath.$filename;
+    }
+
+    public function download(Request $request) {
+        $checkinfo = $this->parse_login_info($request);
+        if ($checkinfo != 'Success')
+            return $checkinfo;
+        $username = $this->username;
+        $password = $this->password;
+
+        if (!$request->has('filename'))
+            return 'Argument error.';
+        $filename = $request->get('filename');
+        $filepath = $username.'/'.$filename.'.tar.gz';
+        if (!Storage::disk('local')->exists($filepath))
+            return 'No such file';
+        $filepath = 'storage/app/'.$filepath;
+        return 'Success:'.$filepath;
+    }
+
+    private function parse_login_info(Request $request) {
+        if (!$request->has('username') || !$request->has('password'))
+            return 'Argument error.';
         $username = $request->input('username');
         $password = $request->input('password');
         $useri = 0;
@@ -57,23 +101,9 @@ class CaptchaController extends Controller {
             $useri++;
         if ($useri == count($this->usrinfo))
             return 'Password wrong.';
-
-        $result = $request->input('result');
-        $ansurl = 'storage/app/'.$username.'/ans.txt';
-        if (!file_exists($ansurl))
-            return 'You should get before attempt.';
-        $ans = file_get_contents($ansurl);
-        $err = $this->error_function($result, $ans);
-        $msg = 'Success:'.$err;
-        return $msg;
-    }
-
-    /* Error function */
-    private function error_function($result, $ans) {
-        if (!strcmp($result, $ans))
-            return 1.0;
-        else
-            return 0.0;
+        $this->username = $username;
+        $this->password = $password;
+        return 'Success';
     }
 
     /* Captcha generator */
