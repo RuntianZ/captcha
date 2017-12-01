@@ -14,6 +14,13 @@ import tensorflow as tf
 # The default batch size.
 default_batch_size = 64
 
+# The default model path.
+default_input_model_path = ""
+default_output_model_path = ""
+
+# The default accurate check step number.
+default_acc_check_step = 50
+
 
 # Set the shape of a captcha image
 IMAGE_HEIGHT = 60
@@ -151,10 +158,10 @@ def crack_captcha_cnn(w_alpha=0.01, b_alpha=0.1):
     return out
 
 
-def train_crack_captcha_cnn(acc_limit, times_limit, generator):
-    if acc_limit < 0 or times_limit < 0:
+def train_crack_captcha_cnn(acc_limit, step_limit, generator, cache_frequency):
+    if acc_limit < 0 or step_limit < 0:
         raise ValueError('Neither limit can be negative.')
-    if acc_limit == 0 and times_limit == 0:
+    if acc_limit == 0 and step_limit == 0:
         raise ValueError('At least one limit is needed.')
 
     output = crack_captcha_cnn()
@@ -175,9 +182,12 @@ def train_crack_captcha_cnn(acc_limit, times_limit, generator):
     
     # Begin training...finally
     saver = tf.train.Saver()
-    global default_batch_size
+    global default_batch_size, default_input_model_path, default_output_model_path, default_acc_check_step
     with tf.Session() as sess:
-        sess.run(tf.global_variables_initializer())
+        if default_input_model_path != "":
+            saver.restore(sess, default_input_model_path)
+        else:
+            sess.run(tf.global_variables_initializer())
 
         step = 0
         while True:
@@ -186,13 +196,26 @@ def train_crack_captcha_cnn(acc_limit, times_limit, generator):
             print(step, loss_)
 
 
-            if step % 100 == 0:
+            if (step_limit != 0) and (step >= step_limit):
+                # Perform leaving accuracy check.
                 batch_x_test, batch_y_test = get_next_batch(100, generator)
                 acc = sess.run(accuracy, feed_dict={X: batch_x_test, Y: batch_y_test, keep_prob: 1.})
                 print('****',step, acc)
-                if (acc_limit == 0 or acc >= acc_limit) or (times_limit == 0 or i >= times_limit):
-                    saver.save(sess, "/tmp/crack_capcha.ckpt")
+                saver.save(sess, default_output_model_path)
+                break
+
+            if (acc_limit != 0) and (step % default_acc_check_step == 0):
+                batch_x_test, batch_y_test = get_next_batch(100, generator)
+                acc = sess.run(accuracy, feed_dict={X: batch_x_test, Y: batch_y_test, keep_prob: 1.})
+                print('****',step, acc)
+                if acc >= acc_limit:
+                    saver.save(sess, default_output_model_path)
                     break
+
+            # Cache the model.
+            if (cache_frequency != 0) and (step % cache_frequency == cache_frequency - 1):
+                print('Model cached.')
+                saver.save(sess, default_output_model_path)
             step += 1
 
 
@@ -207,9 +230,10 @@ def crack_captcha(captcha_image):
     '''
     output = crack_captcha_cnn()
 
+    global default_input_model_path
     saver = tf.train.Saver()
     with tf.Session() as sess:
-        saver.restore(sess, "/tmp/crack_capcha.ckpt")
+        saver.restore(sess, default_input_model_path)
 
         predict = tf.argmax(tf.reshape(output, [-1, MAX_CAPTCHA, CHAR_SET_LEN]), 2)
         text_list = sess.run(predict, feed_dict={X: [captcha_image], keep_prob: 1})
@@ -228,17 +252,18 @@ def crack_captcha(captcha_image):
 # The following methods can be used by importing the train module.
 
 
-def start_train(acc_limit = 0, times_limit = 0, \
-    generator = gen_captcha_text_and_image, progress_bar = True):
+def start_train(acc_limit = 0, step_limit = 0, \
+    generator = gen_captcha_text_and_image, cache_frequency = 10):
     '''
-    start_train -         Start to train the model.
-    :param acc_limit:     The model accuracy lower limit.
-    :param times_limit:   The training times upper limit.
-    :param generator:     A function that returns a new captcha image and its result every
-                          time it is called.
+    start_train -             Start to train the model.
+    :param acc_limit:         The model accuracy lower limit.
+    :param step_limit:        The training step upper limit.
+    :param generator:         A function that returns a new captcha image and its result every
+                              time it is called.
+    :param cache_frequency:   Whether the model should be cached while it is being trained.
 
     You must set one limit if you want to train the model. If the accuracy limit is set,
-    the model will be trained until the accuracy is reached. If the times limit is set,
+    the model will be trained until the accuracy is reached. If the step limit is set,
     the model will stop training once the model is trained that many times. The model
     will stop if any of the limits is reached.
     The generator is a function that returns (text, image) on calling, where image is a
@@ -249,12 +274,23 @@ def start_train(acc_limit = 0, times_limit = 0, \
     following code to create a captcha image:
     captcha_image = Image.open(captcha) 
     captcha_image = numpy.array(captcha_image)
+    If cache_frequency = n > 0, the method will cache the model every n steps. If n = 0 then
+    the model will not be cached. Cache the model so that you can resume training if 
+    interrupted. A message will be printed every time the model is cached.
+    This method reads the initial model from default model input path and writes the trained
+    model to default model output path. Set these two paths using set_model_path(). If input
+    path is set to an empty string, a new model will be created and used.
 
     Example:
-    >>> start_train(times_limit = 10)
-    gYSQ
-    0 0.698386
-    **** 0 0.0175
+    >>> start_train(step_limit = 4, cache_frequency = 2)
+    0 0.0839923 
+    1 0.0823886
+    Model cached.
+    2 0.0829402
+    3 0.0838127
+    Model cached.
+    4 0.0870781
+    **** 4 0.0175
     '''
 
     # Test whether generator works.
@@ -262,23 +298,11 @@ def start_train(acc_limit = 0, times_limit = 0, \
     global MAX_CAPTCHA
     MAX_CAPTCHA = len(text)
 
-    # Create generator with progress bar.
-    def generator_with_progress_bar():
-        result = generator()
-        print('*', end = '')
-        sys.stdout.flush()
-        return result
-
-    if progress_bar:
-        gen = generator_with_progress_bar
-    else:
-        gen = generator
-
     # Initialize X and Y.
     global X, Y
     X = tf.placeholder(tf.float32, [None, IMAGE_HEIGHT*IMAGE_WIDTH])
     Y = tf.placeholder(tf.float32, [None, MAX_CAPTCHA*CHAR_SET_LEN])
-    train_crack_captcha_cnn(acc_limit, times_limit, gen)
+    train_crack_captcha_cnn(acc_limit, step_limit, generator, cache_frequency)
 
 
 def set_batch_size(new_size):
@@ -293,12 +317,29 @@ def set_batch_size(new_size):
     default_batch_size = new_size
 
 
+def set_model_path(input_path = "", output_path = ""):
+    '''
+    set_model_path -     Set the default model paths.
+    :param input_path:   The new model input path.
+    :param output_path:  The new model output path.
+
+    This method sets default input path and output path. The input path is used in initializing
+    training model and performing recognition. The output path is used when saving trained
+    model.
+    '''
+    global default_input_model_path, default_output_model_path
+    default_input_model_path = input_path
+    default_output_model_path = output_path
+
+
 def recognize(url, local = False):
     '''
     recognize      Recognize a captcha image from its URL.
     :param url:    The URL of the captcha image.
     :param local:  True if this captcha image is a local file.
-    :return:     A string. Recognition result.
+    :return:       A string. Recognition result.
+
+    This method uses the model from the default model input path.
 
     Examples:
     >>> recognize('http://www.example.com/captcha.png')
@@ -306,6 +347,9 @@ def recognize(url, local = False):
     >>> recognize('E:/captchas/captcha.png', True)
     hEllO
     '''
+    global default_input_model_path
+    if default_input_model_path == '':
+        raise ValueError('Input path not set.')
     img = convert2gray(get_captcha_from_url(url, local))
     flat = img.flatten() / 255
     result = crack_captcha(flat)
