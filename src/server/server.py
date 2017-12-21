@@ -2,14 +2,10 @@
 
 import urllib.request
 import server.ef as ef
-
-
-class ServerException(Exception):
-    def __init__(self, msg):
-        self.msg = msg
-
-    def message(self):
-        return self.msg
+import tarfile
+import glob
+import os
+import requests
 
 
 # Cached user and password.
@@ -21,7 +17,7 @@ def cache_login(func):
 
     def cached_func(*args, **kwargs):
         global cached_username, cached_password
-        if cached_username == '':
+        if (cached_username == '') or ('username' in kwargs):
             return func(*args, **kwargs)
         return func(username = cached_username, password = cached_password, *args, **kwargs)
 
@@ -44,7 +40,7 @@ def server_get(username, password, groupid):
     '''
     groupid = str(groupid)
     if not groupid.isdigit():
-        raise ServerException('Groupid must be a digit.')
+        raise ValueError('Groupid must be a digit.')
     url = 'http://vitas.runtianz.cn/captcha/get?username=' + \
           username + '&password=' + password + '&groupid=' + groupid
     with urllib.request.urlopen(url) as page:
@@ -52,7 +48,7 @@ def server_get(username, password, groupid):
     resp = str(data, 'utf-8')
     if (len(resp) > 8) and ('Success' == resp[0:7]):
         return resp[8:]
-    raise ServerException(resp)
+    raise ValueError(resp)
 
 
 def server_view(username, password):
@@ -73,7 +69,7 @@ def server_view(username, password):
     resp = str(data, 'utf-8')
     if (len(resp) > 8) and ('Success' == resp[0:7]):
         return resp[8:]
-    raise ServerException(resp)
+    raise ValueError(resp)
 
 
 @cache_login
@@ -156,16 +152,24 @@ def server_login(username, password):
     Only one user can be logged in at a time, but you can call this method multiple 
     times. For example, if you happened to provide the wrong password, you can call
     this method to modify your password.
-    Once you have logged in, you are not allowed to provide username and password
-    again when calling server methods. You can call server_logout if you want.
+    Moreover, you can call server methods using another account even if you have 
+    already logged in. But logging in with another account will log out the previous
+    account.
+    Once you have logged in, you cannot use positional arguments when calling server
+    methods.
 
     Examples:
-    >>> server_login('user', 'password')
+    >>> server_login('user1', 'password1')
+    >>> server_get(groupid = 1)
+    http://www.example.com/user1.png
     >>> server_get(1)
-    http://www.example.com/example.png
-    >>> server_get('user', 'password', 1)
     Traceback (most recent call last):
         ...
+    >>> server_get('user1', 'password1', 1)
+    Traceback (most recent call last):
+        ...
+    >>> server_get(username = 'user2', password = 'password2', groupid = 1)
+    http://www.example.com/user2.png
     '''
     global cached_username, cached_password
     cached_username = username
@@ -181,3 +185,56 @@ def server_logout():
     '''
     global cached_username
     cached_username = ''
+
+
+# Walk in a directory and yielding files that match the extension.
+def file_traverse(dir, ext):
+    for i in glob.glob(os.path.join(dir, ext)):
+        yield i
+
+
+# Package a model file into a tar.gz file.
+def packager(path, tarpath):
+    if os.path.isdir(path):
+        raise ValueError('Path should not be a directory.');
+    dirpath, filepath = os.path.split(path)
+    tar = tarfile.open(tarpath, 'w:gz')
+
+    # Check 3 essential files.
+    efile = path + '.index'
+    if not os.path.isfile(efile):
+        raise ValueError('Essential file ' + efile + ' does not exist.')
+    efile = path + '.meta'
+    if not os.path.isfile(efile):
+        raise ValueError('Essential file ' + efile + ' does not exist.')
+    efile = os.path.join(dirpath, 'checkpoint')
+    if not os.path.isfile(efile):
+        raise ValueError('Essential file ' + efile + ' does not exist.')
+
+    print(efile)
+    tar.add(efile)    
+
+    tar.close()
+    return tarpath
+
+
+@cache_login
+def server_upload(username, password, path, model_name, replace = False):
+    '''
+    TODO
+    '''
+    
+    # Process files.
+    tarpath = 'temp.tar'
+    packager(path, tarpath)
+
+    url = 'http://vitas.runtianz.cn/captcha/upload'
+    postdata = {'username': username, 'password': password, 'filename': model_name}
+    files = {'file': (tarpath, open(tarpath, 'rb'))}
+    r = requests.post(url = url, data = postdata, files = files)
+
+    resp = r.text
+    if (len(resp) > 8) and ('Success' == resp[0:7]):
+        return resp[8:]
+    raise ValueError(resp)
+
