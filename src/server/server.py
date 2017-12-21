@@ -213,10 +213,7 @@ def packager(path, tarpath):
 
     print(efile)
     tar.add(efile)    
-    ext = filepath + '.*'
-    for file in file_traverse(dirpath, ext):
-        print(file)
-        tar.add(file)
+
     tar.close()
     return tarpath
 
